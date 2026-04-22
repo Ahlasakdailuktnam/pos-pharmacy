@@ -3,10 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Products;
-use App\Models\SubCategory;
 use Illuminate\Http\Request;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
-use Illuminate\Validation\ValidationException;
 
 class ProductsController extends Controller
 {
@@ -50,8 +48,6 @@ class ProductsController extends Controller
             // image
             'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
-
-        $this->ensureSubCategoryMatchesCategory($data);
 
         // Upload image to Cloudinary
         if ($request->hasFile('image')) {
@@ -117,8 +113,6 @@ class ProductsController extends Controller
             // image
             'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
-
-        $this->ensureSubCategoryMatchesCategory($data);
 
         // Replace image
         if ($request->hasFile('image')) {
@@ -187,22 +181,5 @@ class ProductsController extends Controller
         $product = Products::whereDate('expiry_date', '<=', now())->get();
 
         return apiResponse($product, 200, 'Expired product found');
-    }
-
-    private function ensureSubCategoryMatchesCategory(array $data): void
-    {
-        if (empty($data['sub_category_id'])) {
-            return;
-        }
-
-        $matchesCategory = SubCategory::whereKey($data['sub_category_id'])
-            ->where('category_id', $data['category_id'])
-            ->exists();
-
-        if (! $matchesCategory) {
-            throw ValidationException::withMessages([
-                'sub_category_id' => ['The selected sub category does not belong to the selected category.'],
-            ]);
-        }
     }
 }

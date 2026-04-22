@@ -8,12 +8,12 @@ use Tests\TestCase;
 class ExampleTest extends TestCase
 {
     /**
-     * The API-only app does not expose a web home page.
+     * A basic test example.
      */
-    public function test_the_root_path_is_not_exposed(): void
+    public function test_the_application_returns_a_successful_response(): void
     {
         $response = $this->get('/');
 
-        $response->assertStatus(404);
+        $response->assertStatus(200);
     }
 }

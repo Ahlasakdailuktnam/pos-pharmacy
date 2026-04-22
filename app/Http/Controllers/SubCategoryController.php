@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 class SubCategoryController extends Controller
 {
     public function GetSub(){
-        $data= SubCategory::with('category')->latest()->get();
+        $data= SubCategory::with('category')->withCount('products')->latest()->get();
         return apiResponse($data,200,'get scuessfully');
     }
     public function AddSub(Request $request){
