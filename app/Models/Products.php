@@ -12,7 +12,7 @@ class Products extends Model
         'name_en',
         'category_id',
         'sub_category_id',
-        'unit',
+        'unit_id',
         'price_per_unit',
         'price_per_box',
         'box_size',
@@ -24,7 +24,8 @@ class Products extends Model
         'prescription_required',
         'description',
         'location',
-        'image'
+        'image',
+        'product_code'
     ];
 
     public function category(){
@@ -33,4 +34,8 @@ class Products extends Model
     public function SubCategory(){
         return $this->belongsTo(SubCategory::class,'sub_category_id');
     }
+    public function unit()
+{
+    return $this->belongsTo(Unit::class);
+}
 }

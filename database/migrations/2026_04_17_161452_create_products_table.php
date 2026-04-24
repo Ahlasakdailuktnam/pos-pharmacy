@@ -28,8 +28,9 @@ return new class extends Migration
                 ->nullOnDelete();
 
             // Unit
-            $table->string('unit');
-
+            $table->foreignId('unit_id')->nullable()
+                ->constrained('units')
+                ->cascadeOnDelete();
             // Price
             $table->decimal('price_per_unit', 10, 2)->nullable();
             $table->decimal('price_per_box', 10, 2)->nullable();
@@ -49,7 +50,7 @@ return new class extends Migration
 
             $table->text('description')->nullable();
             $table->string('location')->nullable();
-
+            $table->string('product_code')->nullable()->unique();
             $table->timestamps();
         });
     }

@@ -4,14 +4,18 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\DashboradController;
 use App\Http\Controllers\SubCategoryController;
 use App\Http\Controllers\ProductsController;
+use App\Http\Controllers\UnitController;
+use App\Http\Controllers\UserController;
 
 /*
 |--------------------------------------------------------------------------
 | API Routes
 |--------------------------------------------------------------------------
 */
+Route::post('/register', [UserController::class, 'register']);
 
 Route::middleware('auth:sanctum')->group(function () {
 
@@ -71,6 +75,12 @@ Route::middleware('auth:sanctum')->group(function () {
         | SubCategory CRUD
         |--------------------------------------------------------------------------
         */
+
+        Route::get('/units', [UnitController::class, 'getUnits']);
+        Route::post('/units', [UnitController::class, 'AddUnits']);
+
+
+
         Route::post('/subcategories', [SubCategoryController::class, 'AddSub']);
         Route::put('/subcategories/{id}', [SubCategoryController::class, 'UpdateSub']);
         Route::delete('/subcategories/{id}', [SubCategoryController::class, 'DeleteSub']);
@@ -83,7 +93,5 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/products', [ProductsController::class, 'AddProduct']);
         Route::put('/products/{id}', [ProductsController::class, 'UpdateProduct']);
         Route::delete('/products/{id}', [ProductsController::class, 'DeleteProducts']);
-
     });
-
 });

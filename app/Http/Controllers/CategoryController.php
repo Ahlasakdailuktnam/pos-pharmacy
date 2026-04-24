@@ -21,7 +21,9 @@ class CategoryController extends Controller
     public function AddCategory(Request $request)
     {
         $data = $request->validate([
-            'name' => 'required|string|max:255|unique:categories,name'
+            'name' => 'required|string|max:255|unique:categories,name',
+               'type' => 'required|in:medicine,cosmetic,equipment'
+
         ]);
         $category = Category::create($data);
         return apiResponse($category, 200, 'add sucessfully');
