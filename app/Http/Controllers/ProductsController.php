@@ -41,9 +41,9 @@ class ProductsController extends Controller
             'cost' => 'nullable|numeric',
 
             'stock_box' => 'required|integer|min:0',
+            'min_stock' => 'nullable|integer|min:0',
 
             'expiry_date' => 'nullable|date',
-            'manufacturer' => 'nullable|string|max:255',
             'prescription_required' => 'nullable|boolean',
 
             'description' => 'nullable|string',
@@ -144,7 +144,6 @@ class ProductsController extends Controller
             'stock_box' => 'required|integer|min:0',
 
             'expiry_date' => 'nullable|date',
-            'manufacturer' => 'nullable|string|max:255',
             'prescription_required' => 'nullable|boolean',
 
             'description' => 'nullable|string',
@@ -221,13 +220,24 @@ class ProductsController extends Controller
 
         return apiResponse($products, 200, 'Search found');
     }
+//     public function SearchProduct($keyword)
+// {
+//     $products = Products::where('id', $keyword)
+//         ->orWhere('name', 'like', "%$keyword%")
+//         ->orWhere('name_en', 'like', "%$keyword%")
+//         ->orWhere('product_code', 'like', "%$keyword%")
+//         ->orWhere('barcode', 'like', "%$keyword%")
+//         ->get();
+
+//     return apiResponse($products, 200, 'Search found');
+// }
 
     /**
      * Low Stock
      */
     public function LowStock()
     {
-        $products = Products::where('stock_unit', '<=', 10)->get();
+        $products = Products::whereColumn('stock_unit', '<=', 'min_stock')->get();
 
         return apiResponse($products, 200, 'Low stock found');
     }

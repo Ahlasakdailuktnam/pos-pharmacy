@@ -9,6 +9,7 @@ use App\Http\Controllers\SubCategoryController;
 use App\Http\Controllers\ProductsController;
 use App\Http\Controllers\UnitController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\SupplierController;
 
 /*
 |--------------------------------------------------------------------------
@@ -16,6 +17,8 @@ use App\Http\Controllers\UserController;
 |--------------------------------------------------------------------------
 */
 Route::post('/register', [UserController::class, 'register']);
+Route::get('/suppliers', [SupplierController::class, 'index']);
+Route::post('/suppliers', [SupplierController::class, 'store']);
 
 Route::middleware('auth:sanctum')->group(function () {
 
