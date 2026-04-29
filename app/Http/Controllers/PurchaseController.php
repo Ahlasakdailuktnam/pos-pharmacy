@@ -10,6 +10,9 @@ use Illuminate\Support\Facades\DB;
 
 class PurchaseController extends Controller
 {
+    /**
+     * Get All Purchases
+     */
     public function index()
     {
         $data = Purchase::with([
@@ -18,16 +21,27 @@ class PurchaseController extends Controller
             'items.product'
         ])->latest()->get();
 
-return apiResponse($data, 200, 'Get purchase successfully');    }
+        return apiResponse($data, 200, 'Get purchase successfully');
+    }
 
+    /**
+     * Create Purchase + Update Stock
+     */
     public function store(Request $request)
     {
+        $request->validate([
+            'supplier_id'   => 'required|exists:suppliers,id',
+            'warehouse_id'  => 'required|exists:warehouses,id',
+            'purchase_date' => 'required|date',
+            'items'         => 'required|array|min:1',
+        ]);
+
         DB::beginTransaction();
 
         try {
 
             $purchase = Purchase::create([
-                'purchase_code'   => 'PUR-' . time(),
+                'purchase_code'   => 'PUR-' . date('Ymd') . '-' . rand(100,999),
                 'supplier_id'     => $request->supplier_id,
                 'warehouse_id'    => $request->warehouse_id,
                 'invoice_number'  => $request->invoice_number,
@@ -50,32 +64,58 @@ return apiResponse($data, 200, 'Get purchase successfully');    }
                     'product_id'        => $item['product_id'],
                     'qty'               => $item['qty'],
                     'unit_cost'         => $item['unit_cost'],
-                    'discount_percent'  => $item['discount_percent'],
-                    'tax_percent'       => $item['tax_percent'],
+                    'discount_percent'  => $item['discount_percent'] ?? 0,
+                    'tax_percent'       => $item['tax_percent'] ?? 0,
                     'line_total'        => $item['line_total'],
                 ]);
 
                 $product = Products::find($item['product_id']);
 
                 if ($product) {
-                    $product->stock_unit += $item['qty'];
+
+                    /**
+                     * If Product Has Box Size
+                     */
+                    if ($product->box_size > 1) {
+
+                        $product->stock_box += $item['qty'];
+                        $product->stock_unit += ($item['qty'] * $product->box_size);
+
+                    } else {
+
+                        $product->stock_unit += $item['qty'];
+                    }
+
+                    /**
+                     * Update Latest Cost
+                     */
                     $product->cost = $item['unit_cost'];
+
                     $product->save();
                 }
             }
 
             DB::commit();
 
-           return apiResponse($purchase, 200, 'Purchase created successfully');
+            $purchase->load([
+                'supplier',
+                'warehouse',
+                'items.product'
+            ]);
+
+            return apiResponse($purchase, 200, 'Purchase created successfully');
 
         } catch (\Exception $e) {
 
             DB::rollBack();
 
-           return apiResponse($e->getMessage(), 500, 'Something went wrong');
+            return apiResponse($e->getMessage(), 500, 'Something went wrong');
         }
     }
 
+    /**
+     * Get Purchase By ID
+     */
     public function show($id)
     {
         $data = Purchase::with([
@@ -84,12 +124,52 @@ return apiResponse($data, 200, 'Get purchase successfully');    }
             'items.product'
         ])->findOrFail($id);
 
-return apiResponse($data, 200, 'Get purchase by id successfully');    }
+        return apiResponse($data, 200, 'Get purchase by id successfully');
+    }
 
+    /**
+     * Delete Purchase + Reverse Stock
+     */
     public function destroy($id)
     {
-        Purchase::findOrFail($id)->delete();
+        DB::beginTransaction();
 
-       return apiResponse([], 200, 'Delete purchase successfully');
+        try {
+
+            $purchase = Purchase::with('items')->findOrFail($id);
+
+            foreach ($purchase->items as $item) {
+
+                $product = Products::find($item->product_id);
+
+                if ($product) {
+
+                    if ($product->box_size > 1) {
+
+                        $product->stock_box -= $item->qty;
+                        $product->stock_unit -= ($item->qty * $product->box_size);
+
+                    } else {
+
+                        $product->stock_unit -= $item->qty;
+                    }
+
+                    $product->save();
+                }
+            }
+
+            $purchase->items()->delete();
+            $purchase->delete();
+
+            DB::commit();
+
+            return apiResponse([], 200, 'Delete purchase successfully');
+
+        } catch (\Exception $e) {
+
+            DB::rollBack();
+
+            return apiResponse($e->getMessage(), 500, 'Something went wrong');
+        }
     }
 }
