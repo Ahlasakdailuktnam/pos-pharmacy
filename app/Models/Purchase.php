@@ -15,6 +15,7 @@ class Purchase extends Model
         'expected_date',
         'payment_method',
         'payment_status',
+        'paid_amount',
         'subtotal',
         'discount_total',
         'tax_total',

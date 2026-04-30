@@ -34,12 +34,36 @@ class PurchaseController extends Controller
             'warehouse_id'  => 'required|exists:warehouses,id',
             'purchase_date' => 'required|date',
             'items'         => 'required|array|min:1',
+            'payment_status'=> 'required|in:pending,partial,paid',
         ]);
 
         DB::beginTransaction();
 
         try {
 
+            /**
+             *  HANDLE PAYMENT LOGIC
+             */
+            $paidAmount = 0;
+
+            if ($request->payment_status === 'paid') {
+                $paidAmount = $request->grand_total;
+            } elseif ($request->payment_status === 'partial') {
+                $paidAmount = $request->paid_amount ?? 0;
+            } else {
+                $paidAmount = 0;
+            }
+
+            /**
+             *  VALIDATION EXTRA
+             */
+            if ($paidAmount > $request->grand_total) {
+                return apiResponse([], 400, 'Paid amount cannot be greater than total');
+            }
+
+            /**
+             * CREATE PURCHASE
+             */
             $purchase = Purchase::create([
                 'purchase_code'   => 'PUR-' . date('Ymd') . '-' . rand(100,999),
                 'supplier_id'     => $request->supplier_id,
@@ -49,6 +73,7 @@ class PurchaseController extends Controller
                 'expected_date'   => $request->expected_date,
                 'payment_method'  => $request->payment_method,
                 'payment_status'  => $request->payment_status,
+                'paid_amount'     => $paidAmount, 
                 'subtotal'        => $request->subtotal,
                 'discount_total'  => $request->discount_total,
                 'tax_total'       => $request->tax_total,
@@ -57,6 +82,9 @@ class PurchaseController extends Controller
                 'status'          => 'completed',
             ]);
 
+            /**
+             * CREATE ITEMS + UPDATE STOCK
+             */
             foreach ($request->items as $item) {
 
                 PurchaseItem::create([
@@ -73,22 +101,14 @@ class PurchaseController extends Controller
 
                 if ($product) {
 
-                    /**
-                     * If Product Has Box Size
-                     */
                     if ($product->box_size > 1) {
-
                         $product->stock_box += $item['qty'];
                         $product->stock_unit += ($item['qty'] * $product->box_size);
-
                     } else {
-
                         $product->stock_unit += $item['qty'];
                     }
 
-                    /**
-                     * Update Latest Cost
-                     */
+                    // update latest cost
                     $product->cost = $item['unit_cost'];
 
                     $product->save();
@@ -145,12 +165,9 @@ class PurchaseController extends Controller
                 if ($product) {
 
                     if ($product->box_size > 1) {
-
                         $product->stock_box -= $item->qty;
-                        $product->stock_unit -= ($item->qty * $product->box_size);
-
+                        $product->stock_unit -= ($item['qty'] * $product->box_size);
                     } else {
-
                         $product->stock_unit -= $item->qty;
                     }
 

@@ -18,17 +18,23 @@ use App\Http\Controllers\WarehouseController;
 | API Routes
 |--------------------------------------------------------------------------
 */
-Route::post('/purchase', [PurchaseController::class, 'store']);
- Route::get('/warehouses', [WarehouseController::class, 'index']);
-    Route::post('/warehouses', [WarehouseController::class, 'store']);
-    Route::put('/warehouses/{id}', [WarehouseController::class, 'update']);
-    Route::delete('/warehouses/{id}', [WarehouseController::class, 'destroy']);
 
-Route::post('/purchase', [PurchaseController::class, 'store']);
-Route::get('/purchase/{id}', [PurchaseController::class, 'show']);
-Route::delete('/purchase/{id}', [PurchaseController::class, 'destroy']);
+
+
+Route::get('/purchases', [PurchaseController::class, 'index']);
+Route::post('/purchases', [PurchaseController::class, 'store']);
+Route::get('/purchases/{id}', [PurchaseController::class, 'show']);
+Route::delete('/purchases/{id}', [PurchaseController::class, 'destroy']);
+
+
+ Route::get('/warehouses', [WarehouseController::class, 'index']);
+Route::post('/warehouses', [WarehouseController::class, 'store']);
+Route::put('/warehouses/{id}', [WarehouseController::class, 'update']);
+Route::delete('/warehouses/{id}', [WarehouseController::class, 'destroy']);
+
 Route::post('/register', [UserController::class, 'register']);
 Route::get('/suppliers', [SupplierController::class, 'index']);
+Route::get('/suppliers/{id}', [SupplierController::class, 'show']);
 Route::post('/suppliers', [SupplierController::class, 'store']);
 
 Route::middleware('auth:sanctum')->group(function () {
