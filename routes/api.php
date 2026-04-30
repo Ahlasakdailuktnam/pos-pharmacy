@@ -18,7 +18,7 @@ use App\Http\Controllers\WarehouseController;
 | API Routes
 |--------------------------------------------------------------------------
 */
-Route::get('/purchase', [PurchaseController::class, 'index']);
+Route::post('/purchase', [PurchaseController::class, 'store']);
  Route::get('/warehouses', [WarehouseController::class, 'index']);
     Route::post('/warehouses', [WarehouseController::class, 'store']);
     Route::put('/warehouses/{id}', [WarehouseController::class, 'update']);

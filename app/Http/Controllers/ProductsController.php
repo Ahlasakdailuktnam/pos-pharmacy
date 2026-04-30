@@ -33,7 +33,7 @@ class ProductsController extends Controller
             'sub_category_id' => 'nullable|exists:sub_categories,id',
 
             'unit_id' => 'nullable|exists:units,id',
-
+              'supplier_id' => 'nullable|exists:suppliers,id',
             'price_per_unit' => 'nullable|numeric',
             'price_per_box' => 'nullable|numeric',
             'box_size' => 'nullable|integer|min:1',
@@ -42,6 +42,7 @@ class ProductsController extends Controller
 
             'stock_box' => 'required|integer|min:0',
             'min_stock' => 'nullable|integer|min:0',
+            'stock_unit' => 'nullable|integer|min:0',
 
             'expiry_date' => 'nullable|date',
             'prescription_required' => 'nullable|boolean',
@@ -91,15 +92,19 @@ class ProductsController extends Controller
             $unit = Unit::find($data['unit_id']);
         }
 
-        if ($unit && strtolower($unit->name) == 'box') {
+       if ($unit && strtolower($unit->name) == 'box') {
 
-            $boxSize = $data['box_size'] ?? 1;
-            $data['stock_unit'] = $data['stock_box'] * $boxSize;
-        } else {
+    $boxSize = $data['box_size'] ?? 1;
 
-            $data['stock_unit'] = $data['stock_box'];
-            $data['box_size'] = $data['box_size'] ?? 1;
-        }
+    $data['stock_box'] = $data['stock_box'] ?? 0;
+    $data['stock_unit'] = $data['stock_box'] * $boxSize;
+
+} else {
+
+    $data['stock_unit'] = $data['stock_unit'] ?? 0;
+    $data['stock_box'] = 0;
+    $data['box_size'] = 1;
+}
         $product = Products::create($data);
 
         return apiResponse($product, 200, 'Add product successfully');
