@@ -27,14 +27,13 @@ Route::get('/purchases/{id}', [PurchaseController::class, 'show']);
 Route::delete('/purchases/{id}', [PurchaseController::class, 'destroy']);
 
 
- Route::get('/warehouses', [WarehouseController::class, 'index']);
+Route::get('/warehouses', [WarehouseController::class, 'index']);
 Route::post('/warehouses', [WarehouseController::class, 'store']);
 Route::put('/warehouses/{id}', [WarehouseController::class, 'update']);
 Route::delete('/warehouses/{id}', [WarehouseController::class, 'destroy']);
 
 Route::post('/register', [UserController::class, 'register']);
 Route::get('/suppliers', [SupplierController::class, 'index']);
-Route::get('/suppliers/{id}', [SupplierController::class, 'show']);
 Route::post('/suppliers', [SupplierController::class, 'store']);
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -110,8 +109,11 @@ Route::middleware('auth:sanctum')->group(function () {
         | Product CRUD
         |--------------------------------------------------------------------------
         */
+        Route::get('/products', [ProductsController::class, 'GetProduct']);
+        Route::get('/products/{id}', [ProductsController::class, 'GetProductById']);
         Route::post('/products', [ProductsController::class, 'AddProduct']);
         Route::put('/products/{id}', [ProductsController::class, 'UpdateProduct']);
         Route::delete('/products/{id}', [ProductsController::class, 'DeleteProducts']);
     });
+    
 });

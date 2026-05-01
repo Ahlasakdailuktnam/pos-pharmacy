@@ -11,17 +11,44 @@ use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 class ProductsController extends Controller
 {
 
-    public function GetProduct()
+    public function GetProduct(Request $request)
     {
-        $products = Products::with([
+        $query = Products::with([
             'category',
             'SubCategory',
             'unit'
-        ])->latest()->get();
+        ]);
+
+        //  Search
+        if ($request->search) {
+            $search = strtoupper($request->search);
+
+            $query->where(function ($q) use ($search) {
+
+                if (is_numeric($search)) {
+                    $q->where('id', $search);
+
+                    $code = 'P' . str_pad($search, 3, '0', STR_PAD_LEFT);
+                    $q->orWhere('product_code', $code);
+                }
+
+                $q->orWhere('name', 'like', "%$search%")
+                    ->orWhere('name_en', 'like', "%$search%")
+                    ->orWhere('barcode', 'like', "%$search%")
+                    ->orWhere('product_code', 'like', "%$search%");
+            });
+        }
+
+        if ($request->category && $request->category !== 'all') {
+            $query->whereHas('category', function ($q) use ($request) {
+                $q->where('name', $request->category);
+            });
+        }
+
+        $products = $query->latest()->limit(100)->get();
 
         return apiResponse($products, 200, 'Get product successfully');
     }
-
 
     public function AddProduct(Request $request)
     {
@@ -33,7 +60,7 @@ class ProductsController extends Controller
             'sub_category_id' => 'nullable|exists:sub_categories,id',
 
             'unit_id' => 'nullable|exists:units,id',
-              'supplier_id' => 'nullable|exists:suppliers,id',
+            'supplier_id' => 'nullable|exists:suppliers,id',
             'price_per_unit' => 'nullable|numeric',
             'price_per_box' => 'nullable|numeric',
             'box_size' => 'nullable|integer|min:1',
@@ -49,7 +76,7 @@ class ProductsController extends Controller
 
             'description' => 'nullable|string',
             'location' => 'nullable|string|max:255',
-
+            'barcode' => 'required| string|max:200',
             'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
@@ -92,19 +119,18 @@ class ProductsController extends Controller
             $unit = Unit::find($data['unit_id']);
         }
 
-       if ($unit && strtolower($unit->name) == 'box') {
+        if ($unit && strtolower($unit->name) == 'box') {
 
-    $boxSize = $data['box_size'] ?? 1;
+            $boxSize = $data['box_size'] ?? 1;
 
-    $data['stock_box'] = $data['stock_box'] ?? 0;
-    $data['stock_unit'] = $data['stock_box'] * $boxSize;
+            $data['stock_box'] = $data['stock_box'] ?? 0;
+            $data['stock_unit'] = $data['stock_box'] * $boxSize;
+        } else {
 
-} else {
-
-    $data['stock_unit'] = $data['stock_unit'] ?? 0;
-    $data['stock_box'] = 0;
-    $data['box_size'] = 1;
-}
+            $data['stock_unit'] = $data['stock_unit'] ?? 0;
+            $data['stock_box'] = 0;
+            $data['box_size'] = 1;
+        }
         $product = Products::create($data);
 
         return apiResponse($product, 200, 'Add product successfully');
@@ -213,29 +239,6 @@ class ProductsController extends Controller
         return apiResponse([], 200, 'Delete successfully');
     }
 
-    /**
-     * Search Product
-     */
-    public function SearchProduct($keyword)
-    {
-        $products = Products::where('name', 'like', "%$keyword%")
-            ->orWhere('name_en', 'like', "%$keyword%")
-            ->orWhere('product_code', 'like', "%$keyword%")
-            ->get();
-
-        return apiResponse($products, 200, 'Search found');
-    }
-//     public function SearchProduct($keyword)
-// {
-//     $products = Products::where('id', $keyword)
-//         ->orWhere('name', 'like', "%$keyword%")
-//         ->orWhere('name_en', 'like', "%$keyword%")
-//         ->orWhere('product_code', 'like', "%$keyword%")
-//         ->orWhere('barcode', 'like', "%$keyword%")
-//         ->get();
-
-//     return apiResponse($products, 200, 'Search found');
-// }
 
     /**
      * Low Stock

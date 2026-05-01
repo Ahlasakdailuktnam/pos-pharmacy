@@ -13,15 +13,32 @@ class SupplierController extends Controller
     | Get All Suppliers
     |--------------------------------------------------------------------------
     */
-    public function index()
+    public function index(Request $request)
     {
+        $query = Supplier::query();
+
+
+        if ($request->search) {
+            $query->where(function ($q) use ($request) {
+                $q->where('company_name_kh', 'like', '%' . $request->search . '%')
+                    ->orWhere('phone', 'like', '%' . $request->search . '%')
+                    ->orWhere('supplier_code', 'like', '%' . $request->search . '%');
+            });
+
+            return apiResponse(
+                $query->latest()->limit(20)->get(),
+                200,
+                'success'
+            );
+        }
+
+        //  Case 2: Get ALL (for table or dropdown)
         return apiResponse(
-            Supplier::latest()->get(),
+            $query->latest()->get(),
             200,
             'success'
         );
     }
-
     /*
     |--------------------------------------------------------------------------
     | Store Supplier
