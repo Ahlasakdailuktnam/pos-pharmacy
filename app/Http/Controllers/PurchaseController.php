@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Purchase;
 use App\Models\PurchaseItem;
 use App\Models\Products;
+use App\Models\PurchasePayment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -34,7 +35,7 @@ class PurchaseController extends Controller
             'warehouse_id'  => 'required|exists:warehouses,id',
             'purchase_date' => 'required|date',
             'items'         => 'required|array|min:1',
-            'payment_status'=> 'required|in:pending,partial,paid',
+            'payment_status' => 'required|in:pending,partial,paid',
         ]);
 
         DB::beginTransaction();
@@ -65,7 +66,7 @@ class PurchaseController extends Controller
              * CREATE PURCHASE
              */
             $purchase = Purchase::create([
-                'purchase_code'   => 'PUR-' . date('Ymd') . '-' . rand(100,999),
+                'purchase_code'   => 'PUR-' . date('Ymd') . '-' . rand(100, 999),
                 'supplier_id'     => $request->supplier_id,
                 'warehouse_id'    => $request->warehouse_id,
                 'invoice_number'  => $request->invoice_number,
@@ -73,7 +74,7 @@ class PurchaseController extends Controller
                 'expected_date'   => $request->expected_date,
                 'payment_method'  => $request->payment_method,
                 'payment_status'  => $request->payment_status,
-                'paid_amount'     => $paidAmount, 
+                'paid_amount'     => $paidAmount,
                 'subtotal'        => $request->subtotal,
                 'discount_total'  => $request->discount_total,
                 'tax_total'       => $request->tax_total,
@@ -124,7 +125,6 @@ class PurchaseController extends Controller
             ]);
 
             return apiResponse($purchase, 200, 'Purchase created successfully');
-
         } catch (\Exception $e) {
 
             DB::rollBack();
@@ -181,7 +181,6 @@ class PurchaseController extends Controller
             DB::commit();
 
             return apiResponse([], 200, 'Delete purchase successfully');
-
         } catch (\Exception $e) {
 
             DB::rollBack();
@@ -189,4 +188,147 @@ class PurchaseController extends Controller
             return apiResponse($e->getMessage(), 500, 'Something went wrong');
         }
     }
+
+
+
+
+
+
+
+
+    /**
+     * Get payment history of a specific purchase
+     */
+    public function getPayments($id)
+    {
+        $purchase = Purchase::with(['payments.createdBy'])->findOrFail($id);
+
+        return apiResponse([
+            'payments' => $purchase->payments,
+            'summary' => [
+                'total_paid' => $purchase->paid_amount,
+                'remaining' => $purchase->grand_total - $purchase->paid_amount,
+                'grand_total' => $purchase->grand_total,
+                'payment_status' => $purchase->payment_status
+            ]
+        ], 200, 'Get payment history successfully');
+    }
+
+    /**
+     * Add new payment to purchase
+     */
+    public function addPayment(Request $request, $id)
+    {
+        $request->validate([
+            'amount' => 'required|numeric|min:0.01',
+            'payment_method' => 'required|in:cash,bank_transfer,credit,check',
+            'payment_date' => 'required|date',
+            'reference_no' => 'nullable|string|max:100',
+            'notes' => 'nullable|string|max:500'
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+            $purchase = Purchase::findOrFail($id);
+
+            $remaining = $purchase->grand_total - $purchase->paid_amount;
+
+            if ($request->amount > $remaining) {
+                return apiResponse([], 400, 'ទឹកប្រាក់លើសពីចំនួនដែលនៅសល់ (នៅសល់: ' . number_format($remaining, 2) . ')');
+            }
+
+            // Create payment record
+            $payment = PurchasePayment::create([
+                'purchase_id' => $purchase->id,
+                'amount' => $request->amount,
+                'payment_method' => $request->payment_method,
+                'reference_no' => $request->reference_no,
+                'payment_date' => $request->payment_date,
+                'notes' => $request->notes,
+                'created_by' => auth()->id()
+            ]);
+
+            // Update purchase
+            $newPaidAmount = $purchase->paid_amount + $request->amount;
+
+            if ($newPaidAmount >= $purchase->grand_total) {
+                $paymentStatus = 'paid';
+            } elseif ($newPaidAmount > 0) {
+                $paymentStatus = 'partial';
+            } else {
+                $paymentStatus = 'pending';
+            }
+
+            $purchase->update([
+                'paid_amount' => $newPaidAmount,
+                'payment_status' => $paymentStatus
+            ]);
+
+            DB::commit();
+
+            return apiResponse([
+                'purchase' => $purchase->load(['payments', 'supplier']),
+                'payment' => $payment->load('createdBy')
+            ], 200, 'កត់ត្រាការបង់ប្រាក់ដោយជោគជ័យ');
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return apiResponse($e->getMessage(), 500, 'មានបញ្ហាកើតឡើង: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Delete a payment (reverse transaction)
+     */
+    public function deletePayment($purchaseId, $paymentId)
+    {
+        DB::beginTransaction();
+
+        try {
+            $payment = PurchasePayment::where('purchase_id', $purchaseId)
+                ->where('id', $paymentId)
+                ->firstOrFail();
+
+            $purchase = $payment->purchase;
+
+            $newPaidAmount = $purchase->paid_amount - $payment->amount;
+
+            if ($newPaidAmount <= 0) {
+                $paymentStatus = 'pending';
+                $newPaidAmount = 0;
+            } elseif ($newPaidAmount >= $purchase->grand_total) {
+                $paymentStatus = 'paid';
+            } else {
+                $paymentStatus = 'partial';
+            }
+
+            $purchase->update([
+                'paid_amount' => $newPaidAmount,
+                'payment_status' => $paymentStatus
+            ]);
+
+            $payment->delete();
+
+            DB::commit();
+
+            return apiResponse($purchase->load('payments'), 200, 'លុបកំណត់ត្រាការបង់ប្រាក់ដោយជោគជ័យ');
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return apiResponse($e->getMessage(), 500, 'មានបញ្ហាកើតឡើង: ' . $e->getMessage());
+        }
+    }
+    /**
+ * Get pending and partial purchases only (for payment management page)
+ */
+public function getPendingPurchases()
+{
+    $purchases = Purchase::with(['supplier', 'warehouse', 'items'])
+        ->whereIn('payment_status', ['pending', 'partial'])
+        ->orderBy('purchase_date', 'desc')
+        ->get();
+    
+    return apiResponse($purchases, 200, 'Get pending purchases successfully');
+}
 }

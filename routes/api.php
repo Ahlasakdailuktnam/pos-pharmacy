@@ -26,6 +26,10 @@ Route::post('/purchases', [PurchaseController::class, 'store']);
 Route::get('/purchases/{id}', [PurchaseController::class, 'show']);
 Route::delete('/purchases/{id}', [PurchaseController::class, 'destroy']);
 
+Route::get('/purchases/pending', [PurchaseController::class, 'getPendingPurchases']);
+Route::get('/purchases/{id}/payments', [PurchaseController::class, 'getPayments']);
+Route::post('/purchases/{id}/payments', [PurchaseController::class, 'addPayment']);
+Route::delete('/purchases/{purchaseId}/payments/{paymentId}', [PurchaseController::class, 'deletePayment']);
 
 Route::get('/warehouses', [WarehouseController::class, 'index']);
 Route::post('/warehouses', [WarehouseController::class, 'store']);

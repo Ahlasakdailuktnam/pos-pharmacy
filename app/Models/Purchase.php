@@ -38,4 +38,20 @@ class Purchase extends Model
     {
         return $this->hasMany(PurchaseItem::class);
     }
+    public function payments()
+    {
+        return $this->hasMany(PurchasePayment::class);
+    }
+
+    // Optional helper methods
+    public function getRemainingAttribute(): float
+    {
+        return $this->grand_total - $this->paid_amount;
+    }
+
+    public function getPaidPercentageAttribute(): float
+    {
+        if ($this->grand_total <= 0) return 0;
+        return ($this->paid_amount / $this->grand_total) * 100;
+    }
 }
