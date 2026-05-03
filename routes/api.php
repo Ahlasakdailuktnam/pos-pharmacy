@@ -20,13 +20,13 @@ use App\Http\Controllers\WarehouseController;
 */
 
 
-
+Route::get('/purchases/pending', [PurchaseController::class, 'getPendingPurchases']);
+Route::get('/purchase-payments', [PurchaseController::class, 'getAllPayments']);
 Route::get('/purchases', [PurchaseController::class, 'index']);
 Route::post('/purchases', [PurchaseController::class, 'store']);
 Route::get('/purchases/{id}', [PurchaseController::class, 'show']);
 Route::delete('/purchases/{id}', [PurchaseController::class, 'destroy']);
 
-Route::get('/purchases/pending', [PurchaseController::class, 'getPendingPurchases']);
 Route::get('/purchases/{id}/payments', [PurchaseController::class, 'getPayments']);
 Route::post('/purchases/{id}/payments', [PurchaseController::class, 'addPayment']);
 Route::delete('/purchases/{purchaseId}/payments/{paymentId}', [PurchaseController::class, 'deletePayment']);

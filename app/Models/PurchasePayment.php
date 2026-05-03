@@ -24,6 +24,16 @@ class PurchasePayment extends Model
         'amount' => 'decimal:2',
         'payment_date' => 'date',
     ];
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($payment) {
+            if (empty($payment->reference_no)) {
+                $payment->reference_no = 'PAY-' . date('Ymd') . '-' . strtoupper(substr(uniqid(), -6));
+            }
+        });
+    }
 
     public function purchase(): BelongsTo
     {
