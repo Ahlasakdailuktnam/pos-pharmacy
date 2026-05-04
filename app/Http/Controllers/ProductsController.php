@@ -173,7 +173,7 @@ class ProductsController extends Controller
             'cost' => 'nullable|numeric',
 
             'stock_box' => 'required|integer|min:0',
-
+            'stock_unit' => 'nullable|integer|min:0',
             'expiry_date' => 'nullable|date',
             'prescription_required' => 'nullable|boolean',
 
@@ -207,14 +207,17 @@ class ProductsController extends Controller
          * Stock Logic
          */
         $unit = Unit::find($data['unit_id']);
-
-        if (strtolower($unit->name) == 'box') {
+        if ($unit && strtolower($unit->name) === 'box') {
 
             $boxSize = $data['box_size'] ?? 1;
-            $data['stock_unit'] = $data['stock_box'] * $boxSize;
+            $stockBox = $data['stock_box'] ?? 0;
+
+            $data['stock_box'] = $stockBox;
+            $data['stock_unit'] = $stockBox * $boxSize;
         } else {
 
-            $data['stock_unit'] = $data['stock_box'];
+            $data['stock_unit'] = $data['stock_unit'] ?? 0;
+            $data['stock_box'] = 0;
             $data['box_size'] = 1;
         }
 

@@ -37,6 +37,7 @@ Route::put('/warehouses/{id}', [WarehouseController::class, 'update']);
 Route::delete('/warehouses/{id}', [WarehouseController::class, 'destroy']);
 
 Route::post('/register', [UserController::class, 'register']);
+Route::get('/suppliers/dashboard', [SupplierController::class, 'dashboard']);
 Route::get('/suppliers', [SupplierController::class, 'index']);
 Route::post('/suppliers', [SupplierController::class, 'store']);
 
