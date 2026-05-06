@@ -1,0 +1,33 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('monthly_salaries', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('staff_detail_id')->constrained('staff_details')->onDelete('cascade');
+            $table->year('year');
+            $table->unsignedTinyInteger('month'); // 1-12
+            $table->decimal('base_salary', 12, 2);
+            $table->decimal('allowance', 12, 2)->default(0);
+            $table->decimal('deduction', 12, 2)->default(0);
+            $table->decimal('bonus', 12, 2)->default(0);
+            $table->decimal('total', 12, 2);
+            $table->enum('status', ['pending', 'paid', 'cancelled'])->default('pending');
+            $table->date('paid_date')->nullable();
+            $table->timestamps();
+            
+            $table->unique(['staff_detail_id', 'year', 'month']);
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('monthly_salaries');
+    }
+};

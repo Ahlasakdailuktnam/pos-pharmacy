@@ -6,6 +6,8 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+
 class UserController extends Controller
 {
     //
@@ -64,5 +66,92 @@ public function logout(Request $request)
 
     return response()->json(['message' => 'Logged out']);
 }
+ public function profile()
+    {
+        $user = Auth::user();
+        return apiResponse($user, 200, 'Profile retrieved successfully');
+    }
+
+    // Update user profile
+    public function updateProfile(Request $request)
+    {
+        $user = Auth::user();
+
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email,' . $user->id,
+            'phone' => 'nullable|string|max:20',
+            'date_of_birth' => 'nullable|date',
+        ]);
+
+        $user->update([
+            'name' => $request->name,
+            'email' => $request->email,
+            'phone' => $request->phone,
+            'date_of_birth' => $request->date_of_birth,
+        ]);
+
+        return apiResponse($user, 200, 'Profile updated successfully');
+    }
+
+    // Update password
+    public function updatePassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => 'required|string',
+            'new_password' => 'required|string|min:6|confirmed',
+        ]);
+
+        $user = Auth::user();
+
+        // Check current password
+        if (!Hash::check($request->current_password, $user->password)) {
+            return apiResponse(null, 400, 'ពាក្យសម្ងាត់បច្ចុប្បន្នមិនត្រឹមត្រូវ');
+        }
+
+        // Update password
+        $user->password = Hash::make($request->new_password);
+        $user->save();
+
+        return apiResponse(null, 200, 'ពាក្យសម្ងាត់បានផ្លាស់ប្តូរដោយជោគជ័យ');
+    }
+
+    // Upload avatar
+    public function uploadAvatar(Request $request)
+    {
+        $request->validate([
+            'avatar' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+        ]);
+
+        $user = Auth::user();
+
+        // Delete old avatar if exists
+        if ($user->avatar && Storage::exists('public/avatars/' . $user->avatar)) {
+            Storage::delete('public/avatars/' . $user->avatar);
+        }
+
+        // Upload new avatar
+        $avatarName = time() . '.' . $request->avatar->extension();
+        $request->avatar->storeAs('public/avatars', $avatarName);
+
+        $user->avatar = $avatarName;
+        $user->save();
+
+        return apiResponse([
+            'avatar' => asset('storage/avatars/' . $avatarName)
+        ], 200, 'Avatar uploaded successfully');
+    }
+
+    // Get staff detail (for staff profile)
+    public function getStaffDetail()
+    {
+        $user = Auth::user();
+        $staffDetail = $user->staffDetail;
+        
+        return apiResponse([
+            'user' => $user,
+            'staff_detail' => $staffDetail
+        ], 200, 'Staff detail retrieved successfully');
+    }
 }
 

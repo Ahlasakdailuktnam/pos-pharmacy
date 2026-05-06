@@ -25,6 +25,8 @@ class User extends Authenticatable
         'phone',
         'id_card',
         'is_admin',
+        'position_id',  // ADD THIS
+
     ];
 
     /**
@@ -47,4 +49,12 @@ class User extends Authenticatable
          'date_of_birth' => 'date',
         'is_admin' => 'integer',
     ];
+     public function staffDetail()
+    {
+        return $this->hasOne(StaffDetail::class);
+    }
+     public function position()
+    {
+        return $this->belongsTo(Position::class);
+    }
 }
